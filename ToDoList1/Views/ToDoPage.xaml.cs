@@ -1,9 +1,12 @@
+using ToDoList1.ViewModels;
+
 namespace ToDoList1.Views;
 
-public partial class ToDoPage : ContentView
+public partial class ToDoPage : ContentPage
 {
-	public ToDoPage()
-	{
-		InitializeComponent();
-	}
+    public ToDoPage()
+    {
+        InitializeComponent();
+        BindingContext = new TodoViewModel();
+    }
 }
