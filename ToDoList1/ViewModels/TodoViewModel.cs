@@ -5,17 +5,20 @@ using Microsoft.Maui.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ToDoList1.Models;
+using ToDoList1.Services;
 
 namespace ToDoList1.ViewModels
 {
     public partial class TodoViewModel : ObservableObject
     {
-        private const string FileName = "todo_list.json";
+        //private const string FileName = "todo_list.json";
 
+        private readonly TodoDatabase _databaseService;
         public ObservableCollection<TodoItem> Items { get; set; } = new();
 
         public TodoViewModel()
         {
+            _databaseService = new TodoDatabase();
             LoadData();
         }
 
@@ -24,9 +27,9 @@ namespace ToDoList1.ViewModels
         {
             if (!string.IsNullOrWhiteSpace(title))
             {
-                Items.Add(new TodoItem { Title = title });
-                Console.WriteLine("dodwanie");
-                SaveData();
+                var newItem = new TodoItem { Title = title};
+                _databaseService.SaveItemAsync(newItem);
+                LoadData();
             }
         }
 
@@ -38,9 +41,8 @@ namespace ToDoList1.ViewModels
             foreach (var task in completedItems)
             {
                 Items.Remove(task);
+                _databaseService.DeleteItemAsync(task);
             }
-
-            SaveData();
         }
 
         [RelayCommand]
@@ -49,35 +51,19 @@ namespace ToDoList1.ViewModels
             if (item != null)
             {
                 item.IsCompleted = !item.IsCompleted;
-                SaveData();
+                _databaseService.SaveItemAsync(item);
+                LoadData();
             }
         }
 
-        private void LoadData()
+        public async void LoadData()
         {
-            try
+            var items = await _databaseService.GetItemsAsync();
+            Items.Clear();
+            foreach (var item in items)
             {
-                var path = Path.Combine(FileSystem.AppDataDirectory, FileName);
-                if (File.Exists(path))
-                {
-                    var json = File.ReadAllText(path);
-                    var items = JsonSerializer.Deserialize<ObservableCollection<TodoItem>>(json);
-                    if (items != null)
-                        Items = new ObservableCollection<TodoItem>(items);
-                }
+                Items.Add(item);
             }
-            catch { }
-        }
-
-        private void SaveData()
-        {
-            try
-            {
-                var path = Path.Combine(FileSystem.AppDataDirectory, FileName);
-                var json = JsonSerializer.Serialize(Items);
-                File.WriteAllText(path, json);
-            }
-            catch { }
         }
     }
 }
